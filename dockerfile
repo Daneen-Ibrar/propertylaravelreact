@@ -14,6 +14,8 @@ RUN apt-get update && apt-get install -y \
     libonig-dev \
     libxml2-dev \
     libzip-dev \
+    nodejs \
+    npm \
     && docker-php-ext-install \
     pdo_mysql \
     mbstring \
@@ -32,9 +34,19 @@ COPY . .
 RUN chmod -R 775 /var/www/html && chown -R www-data:www-data /var/www/html
 
 # Install Laravel dependencies
-RUN composer install
+RUN composer install --no-dev --optimize-autoloader
 
-# Expose port 8000 for the Laravel development server
+# Build React frontend
+WORKDIR /var/www/html/frontend
+RUN npm install && npm run build
+
+# Move React build to Laravel public folder
+RUN cp -r dist/* /var/www/html/public/
+
+# Set working directory back to Laravel
+WORKDIR /var/www/html
+
+# Expose port 8000 for Laravel
 EXPOSE 8000
 
 # Start Laravel's development server
